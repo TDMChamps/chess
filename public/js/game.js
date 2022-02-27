@@ -118,12 +118,16 @@ const setSide = (side) => {
   state.side = side;
   board.orientation(side === "w" ? "white" : "black");
   setTurn();
-  sounds.start.play();
+  sounds.start.play().catch((err) => console.log(err));
 };
 
 const updateMoves = (move) => {
-  game.load(move.fen);
-  board.position(move.fen);
+  game.move({
+    from: move.source,
+    to: move.target,
+    promotion: "q",
+  });
+  board.move(`${move.source}-${move.target}`);
   updateStatus(1, move.source, move.target, move.captured);
 };
 
@@ -157,9 +161,9 @@ const updateStatus = (dontEmit, source, target, captured) => {
   $square(target).addClass("lastMove");
 
   if (captured) {
-    sounds.capture.play();
+    sounds.capture.play().catch((err) => console.log(err));
   } else {
-    sounds.move.play();
+    sounds.move.play().catch((err) => console.log(err));
   }
 
   let status = "";
@@ -177,7 +181,7 @@ const updateStatus = (dontEmit, source, target, captured) => {
     status = moveColor + " to move";
 
     if (game.in_check()) {
-      sounds.check.play();
+      sounds.check.play().catch((err) => console.log(err));
       const pos = getPiecePositions({
         color: game.turn(),
         type: "k",
@@ -301,8 +305,9 @@ const initBoard = (gameDetails) => {
 
   board = ChessBoard("boardDiv", config);
 
-  board.orientation(gameDetails.b ? "white" : "black");
   if (!gameDetails.status && gameDetails.player1.deviceID != myID) {
+    board.orientation(gameDetails.b ? "white" : "black");
+
     swal
       .fire({
         title: `${gameDetails.player1.name} inving you`,
