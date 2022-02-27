@@ -2,10 +2,53 @@ const $ = window["$"];
 const chessBoard = window["ChessBoard"];
 const chess = window["Chess"];
 const IO = window["io"];
+const swal = window["sweetAlert"];
 
 const game = new chess();
 
 const socket = IO();
+
+let board;
+
+let games = [];
+
+const generateDeviceID = () => {
+  let roomID = "";
+  let chars = "abcdefgijklmnopqrestuvwxyz0123456789";
+  for (let i = 0; i < 10; i++) {
+    roomID += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return roomID;
+};
+
+function setCookie(name, value, days) {
+  var expires = "";
+  if (days) {
+    var date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+const getDeviceID = () => {
+  if (document.cookie) {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].split("=");
+      if (cookie[0] === "deviceID") {
+        return cookie[1];
+      }
+    }
+  }
+  const deviceID = generateDeviceID();
+  setCookie("deviceID", deviceID, 30);
+  return deviceID;
+};
+
+socket.on("connect", function () {
+  getDeviceID();
+});
 
 const sounds = {
   start: new Audio("./../sounds/start.ogg"),
@@ -192,18 +235,25 @@ const onSnapEnd = () => {
   board.position(game.fen());
 };
 
-let config = {
-  draggable: true,
-  position: "start",
-  onDragStart: onDragStart,
-  onDrop: onDrop,
-  onSnapEnd: onSnapEnd,
-};
+const initBoard = (position) => {
+  let config = {
+    draggable: true,
+    position,
+    onDragStart: onDragStart,
+    onDrop: onDrop,
+    onSnapEnd: onSnapEnd,
+  };
 
-const board = ChessBoard("boardDiv", config);
+  board = ChessBoard("boardDiv", config);
+};
 
 socket.on("welcome", (message) => {
   console.log(message);
+  games = message.games; //[];
+  // Object.keys(message.games).forEach((key) => {
+  //   games.push(message.games[key]);
+  // });
+  listGames();
 });
 
 socket.on("test", (data) => {
@@ -220,5 +270,48 @@ socket.on("moveFromBackend", (move) => {
 });
 
 $("#join").on("click", () => {
-  socket.emit("join");
+  // initBoard("start");
 });
+const piece = (p) =>
+  `<div class="square-55d63 white-1e1d7" style="width:89px;height:89px;"><img src="img/chesspieces/wikipedia/${p}.png" alt="" class="piece-417db" style="width:89px;height:89px;"></div>`;
+$("#create").click(() => {
+  swal
+    .fire({
+      title: "Choose a side",
+      showDenyButton: true,
+      confirmButtonText: piece("bK"),
+      confirmButtonColor: "#fff",
+      denyButtonText: piece("wK") + "<br>",
+      denyButtonColor: "#fff",
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        socket.emit("createGame", "b");
+      } else if (result.isDenied) {
+        socket.emit("createGame", "w");
+      }
+    });
+});
+
+const gameCard = (id, playerName, color) => `<div class="col">
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Challenger: ${playerName}</h5>
+                    <p class="card-text">Match ID: #${id}</p>
+      <button onclick='play(${id})' class="btn btn-outline">${color}</button>
+    </div>
+  </div>
+</div>`;
+
+const listGames = () => {
+  const gameDiv = document.getElementById("games");
+  gameDiv.innerHTML = "";
+  for (const key in games) {
+    gameDiv.innerHTML += gameCard(
+      games[key].id,
+      games[key].player1.name,
+      games[key].b ? piece("wK") : piece("bK")
+    );
+  }
+};
+// $game;

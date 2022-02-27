@@ -9,9 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cookie": "^0.4.2",
     "express": "^4.17.3",
     "http": "^0.0.1-security",
     "path": "^0.12.7",
+    "random-name": "^0.1.2",
     "socket.io": "^4.4.1"
   }
 }
