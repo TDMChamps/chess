@@ -1,0 +1,32 @@
+.possibleMove:after {
+  position: absolute;
+  content: "";
+  background: #283da7;
+  height: 25px;
+  width: 25px;
+  display: inline-block;
+  left: 0;
+  right: 0;
+  margin: auto;
+  bottom: 34%;
+  border-radius: 50%;
+}
+
+.check {
+  box-shadow: inset 0px 0px 3px 2px #f00;
+  background: radial-gradient(
+    ellipse at center,
+    red 0%,
+    #e70000 25%,
+    rgba(169, 0, 0, 0) 89%,
+    rgba(158, 0, 0, 0) 100%
+  );
+  z-index: -1;
+}
+.attack {
+  box-shadow: inset 0px 0px 3px 2px rgb(255, 0, 0);
+}
+
+.lastMove {
+  box-shadow: inset 0px 0px 3px 2px #283da7;
+}
