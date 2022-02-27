@@ -21,7 +21,6 @@
     rgba(169, 0, 0, 0) 89%,
     rgba(158, 0, 0, 0) 100%
   );
-  z-index: -1;
 }
 .attack {
   box-shadow: inset 0px 0px 3px 2px rgb(255, 0, 0);

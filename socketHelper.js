@@ -37,7 +37,9 @@ const socketHelper = (io) => {
   };
 
   const joinGame = (client, gameID) => {
-    client.join(gameID);
+    if (games[gameID]) {
+      client.join(gameID);
+    }
   };
 
   const acceptGameChallenge = (io, client, gameID) => {
@@ -47,9 +49,21 @@ const socketHelper = (io) => {
         games[gameID].player2 = players[client.deviceID];
         side = games[gameID]["w"] ? "b" : "w";
         games[gameID][side] = client.deviceID;
-        io.to(games[gameID].player2.deviceID).emit("accepted", games[gameID]);
+        io.to(games[gameID].player1.deviceID).emit("setSide", side);
+        io.to(games[gameID].player2.deviceID).emit(
+          "setSide",
+          side === "w" ? "b" : "w"
+        );
       }
     }
+  };
+
+  const isPlaying = (client, gameID) => {
+    const game = games[gameID];
+    if (!game) {
+      return false;
+    }
+    return client.deviceID == game.w || client.deviceID == game.b;
   };
 
   const addUserIdentity = (client) => {
@@ -86,6 +100,23 @@ const socketHelper = (io) => {
       }
     });
 
+    client.on("acceptMatch", (gameDetails) => {
+      acceptGameChallenge(io, client, gameDetails.id);
+    });
+
+    client.on("getGame", (gameID) => {
+      if (games[gameID]) {
+        joinGame(client, gameID);
+        io.to(client.deviceID).emit("gameDetails", {
+          gameDetails: games[gameID],
+        });
+      } else {
+        io.to(client.deviceID).emit("gameDetails", {
+          gameDetails: null,
+        });
+      }
+    });
+
     client.on("createGame", (side) => {
       createAndJoinGame(client, side);
     });
@@ -102,7 +133,11 @@ const socketHelper = (io) => {
     });
 
     client.on("move", (move) => {
-      client.to("room1").emit("moveFromBackend", move);
+      const gameID = move.gameIDFromUrl;
+      if (isPlaying(client, gameID)) {
+        games[gameID].fen = move.fen;
+        client.to(gameID).emit("moveFromBackend", move);
+      }
     });
   });
 };

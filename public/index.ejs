@@ -30,50 +30,21 @@
     <title>Online Chess</title>
   </head>
   <body>
+    <script>
+      window["gameIDFromUrl"] = "<%= gameID %>";
+    </script>
     <div class="container">
       <h2>Online Chess</h2>
+
+      <h4 id="player2"></h4>
       <div id="boardDiv"></div>
+      <h4 id="player1"></h4>
+
       <div id="status"></div>
-      <div id="fen"></div>
+      <div id="pgn"></div>
       <div id="turn"></div>
       <div id="games" class="row"></div>
       <button class="btn btn-primary" id="create">Create Game</button>
-
-      <!-- <div class="row">
-        <div class="col">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Title</h5>
-              <p class="card-text">Content</p>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Title</h5>
-              <p class="card-text">Content</p>
-            </div>
-          </div>
-        </div>
-        <div class="w-100"></div>
-        <div class="col">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Title</h5>
-              <p class="card-text">Content</p>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Title</h5>
-              <p class="card-text">Content</p>
-            </div>
-          </div>
-        </div>
-      </div> -->
     </div>
     <script src="./js/game.js"></script>
   </body>

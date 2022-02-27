@@ -3,14 +3,24 @@ const chessBoard = window["ChessBoard"];
 const chess = window["Chess"];
 const IO = window["io"];
 const swal = window["sweetAlert"];
+const gameIDFromUrl = window["gameIDFromUrl"];
 
-const game = new chess();
+let game = new chess();
 
 const socket = IO();
 
 let board;
 
 let games = [];
+let currentGame;
+let myID;
+let state = {
+  status: "",
+  pgn: "",
+  fen: "",
+  side: "",
+  turn: "",
+};
 
 const generateDeviceID = () => {
   let roomID = "";
@@ -46,25 +56,42 @@ const getDeviceID = () => {
   return deviceID;
 };
 
+const myGame = (gameDetails) => {
+  if (gameDetails.status) {
+    if (myID == gameDetails.w) {
+      setSide("w");
+    } else if (myID == gameDetails.b) {
+      setSide("b");
+    }
+  }
+};
+
 socket.on("connect", function () {
-  getDeviceID();
+  myID = getDeviceID();
+
+  if (gameIDFromUrl) {
+    socket.emit("getGame", gameIDFromUrl);
+    socket.on("gameDetails", ({ gameDetails }) => {
+      if (gameDetails) {
+        initBoard(gameDetails);
+        currentGame = gameDetails;
+        $("#games").hide();
+        $("#create").hide();
+        myGame(gameDetails);
+      }
+    });
+  }
 });
 
 const sounds = {
   start: new Audio("./../sounds/start.ogg"),
   move: new Audio("./../sounds/move.ogg"),
   capture: new Audio("./../sounds/capture.ogg"),
+  check: new Audio("./../sounds/+.wav"),
+  mate: new Audio("./../sounds/#.wav"),
 };
 
 let move;
-
-let state = {
-  status: "",
-  pgn: "",
-  fen: "",
-  side: "",
-  turn: "",
-};
 
 const setStatus = (status) => {
   state.status = status;
@@ -73,6 +100,7 @@ const setStatus = (status) => {
 
 const setPgn = (pgn) => {
   state.pgn = pgn;
+  document.getElementById("pgn").innerText = pgn;
 };
 
 const setTurn = () => {
@@ -83,7 +111,7 @@ const setTurn = () => {
 
 const setFen = (fen) => {
   state.fen = fen;
-  document.getElementById("fen").innerText = fen;
+  // document.getElementById("fen").innerText = fen;
 };
 
 const setSide = (side) => {
@@ -120,7 +148,9 @@ const getPiecePositions = (piece) => {
 };
 
 const updateStatus = (dontEmit, source, target, captured) => {
-  setTurn();
+  if (state.side) {
+    setTurn();
+  }
   $(".lastMove").removeClass("lastMove");
 
   $square(source).addClass("lastMove");
@@ -147,6 +177,7 @@ const updateStatus = (dontEmit, source, target, captured) => {
     status = moveColor + " to move";
 
     if (game.in_check()) {
+      sounds.check.play();
       const pos = getPiecePositions({
         color: game.turn(),
         type: "k",
@@ -160,11 +191,12 @@ const updateStatus = (dontEmit, source, target, captured) => {
   }
 
   setStatus(status);
-  setFen(game.fen());
+  // setFen(game.fen());
   setPgn(game.pgn());
 
   if (!dontEmit)
     socket.emit("move", {
+      gameIDFromUrl,
       fen: game.fen(),
       source: source,
       target: target,
@@ -235,16 +267,57 @@ const onSnapEnd = () => {
   board.position(game.fen());
 };
 
-const initBoard = (position) => {
+const setPlayersNames = (gameDetails) => {
+  board.orientation();
+  let color = ["White", "Black"];
+  board.orientation() === "black" && color.reverse();
+  $("#player1").text(`${color[0]}: ${gameDetails.player1.name} `);
+  if (gameDetails.player2) {
+    $("#player2").text(`${color[1]}: ${gameDetails.player2.name}`);
+  } else {
+    $("#player2").text(`${color[1]}: ???`);
+  }
+};
+
+const acceptMatch = (gameDetails) => {
+  socket.emit("acceptMatch", gameDetails);
+  gameDetails.w && board.orientation("flip");
+};
+
+const initBoard = (gameDetails) => {
   let config = {
     draggable: true,
-    position,
+    position: gameDetails.fen,
     onDragStart: onDragStart,
     onDrop: onDrop,
     onSnapEnd: onSnapEnd,
   };
 
+  if (gameDetails.fen != "start") {
+    game.load(gameDetails.fen);
+  }
+
+  // player2.pl;
+
   board = ChessBoard("boardDiv", config);
+
+  board.orientation(gameDetails.b ? "white" : "black");
+  if (!gameDetails.status && gameDetails.player1.deviceID != myID) {
+    swal
+      .fire({
+        title: `${gameDetails.player1.name} inving you`,
+        showCancelButton: true,
+        confirmButtonText: "Accpet",
+        cancelButtonText: "Just Wacth the match",
+      })
+      .then((result) => {
+        if (result.isConfirmed) {
+          acceptMatch(gameDetails);
+        }
+      });
+  }
+
+  setPlayersNames(gameDetails);
 };
 
 socket.on("welcome", (message) => {
@@ -297,8 +370,8 @@ const gameCard = (id, playerName, color) => `<div class="col">
   <div class="card">
     <div class="card-body">
       <h5 class="card-title">Challenger: ${playerName}</h5>
-                    <p class="card-text">Match ID: #${id}</p>
-      <button onclick='play(${id})' class="btn btn-outline">${color}</button>
+      <p class="card-text">Match ID: #<a href="/${id}">${id}</a> </p>
+      <button onclick="play('${id}')" class="btn btn-outline">${color}</button>
     </div>
   </div>
 </div>`;
@@ -313,5 +386,9 @@ const listGames = () => {
       games[key].b ? piece("wK") : piece("bK")
     );
   }
+};
+
+const play = (gameID) => {
+  console.log({ gameID });
 };
 // $game;
