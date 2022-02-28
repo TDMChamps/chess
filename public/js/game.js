@@ -31,10 +31,17 @@ const clickToMove = () => {
   squareSelector.on("click", (e) => {
     if (fromSquare) {
       const _toSquare = $(e.delegateTarget).data("square");
-      onDrop(fromSquare, _toSquare);
+      const piece = game.get(_toSquare);
+      if (piece && piece.color == state.side) {
+        const _fromSquare = $(e.delegateTarget).data("square");
+        const _piece = $(e.target).data("piece");
+        onDragStart(_fromSquare, _piece, null, null);
+      } else {
+        onDrop(fromSquare, _toSquare);
+      }
     } else {
       const _fromSquare = $(e.delegateTarget).data("square");
-      const _piece = $(e.delegateTarget).data("piece");
+      const _piece = $(e.target).data("piece");
       onDragStart(_fromSquare, _piece, null, null);
     }
   });
@@ -136,6 +143,7 @@ const setSide = (side) => {
   state.side = side;
   board.orientation(side === "w" ? "white" : "black");
   setTurn();
+  clickToMove();
   sounds.start.play().catch((err) => console.log(err));
 };
 
@@ -224,6 +232,7 @@ const updateStatus = (dontEmit, source, target, captured) => {
       target: target,
       captured: move.captured,
     });
+  onSnapEnd();
 };
 
 const onDragStart = (source, piece, position, orientation) => {
@@ -311,11 +320,11 @@ const acceptMatch = (gameDetails) => {
 
 const initBoard = (gameDetails) => {
   let config = {
-    draggable: true,
+    // draggable: true,
     position: gameDetails.fen,
-    onDragStart: onDragStart,
-    onDrop: onDrop,
-    onSnapEnd: onSnapEnd,
+    // onDragStart: null,
+    // onDrop: onDrop,
+    // onSnapEnd: onSnapEnd,
   };
 
   if (gameDetails.fen != "start") {
@@ -341,8 +350,6 @@ const initBoard = (gameDetails) => {
           acceptMatch(gameDetails);
         }
       });
-  } else {
-    clickToMove();
   }
 
   setPlayersNames(gameDetails);
