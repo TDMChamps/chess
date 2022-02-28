@@ -30,13 +30,12 @@ const clickToMove = () => {
   const squareSelector = $(".square");
   squareSelector.on("click", (e) => {
     if (fromSquare) {
-      toSquare = $(e.delegateTarget).data("square");
-      onDrop(fromSquare, toSquare);
-      fromSquare = toSquare = null;
+      const _toSquare = $(e.delegateTarget).data("square");
+      onDrop(fromSquare, _toSquare);
     } else {
-      fromSquare = $(e.delegateTarget).data("square");
-      piece = $(e.delegateTarget).data("piece");
-      onDragStart(toSquare, piece, null, null);
+      const _fromSquare = $(e.delegateTarget).data("square");
+      const _piece = $(e.delegateTarget).data("piece");
+      onDragStart(_fromSquare, _piece, null, null);
     }
   });
 };
@@ -247,6 +246,8 @@ const onDragStart = (source, piece, position, orientation) => {
     return false;
   }
 
+  fromSquare = source;
+
   const possibleMoves = game.moves({ square: source });
 
   $(".possibleMove").removeClass("possibleMove");
@@ -283,6 +284,7 @@ const onDrop = (source, target) => {
   $(".possibleMove").removeClass("possibleMove");
   $(".attack").removeClass("attack");
 
+  fromSquare = toSquare = null;
   updateStatus(null, source, target, move.captured);
 };
 
@@ -371,16 +373,16 @@ socket.on("moveFromBackend", (move) => {
 $("#join").on("click", () => {
   // initBoard("start");
 });
-const piece = (p) =>
+const pieceSquare = (p) =>
   `<div class="square-55d63 white-1e1d7" style="width:89px;height:89px;"><img src="img/chesspieces/wikipedia/${p}.png" alt="" class="piece-417db" style="width:89px;height:89px;"></div>`;
 $("#create").click(() => {
   swal
     .fire({
       title: "Choose a side",
       showDenyButton: true,
-      confirmButtonText: piece("bK"),
+      confirmButtonText: pieceSquare("bK"),
       confirmButtonColor: "#fff",
-      denyButtonText: piece("wK") + "<br>",
+      denyButtonText: pieceSquare("wK") + "<br>",
       denyButtonColor: "#fff",
     })
     .then((result) => {
@@ -409,7 +411,7 @@ const listGames = () => {
     gameDiv.innerHTML += gameCard(
       games[key].id,
       games[key].player1.name,
-      games[key].b ? piece("wK") : piece("bK")
+      games[key].b ? pieceSquare("wK") : pieceSquare("bK")
     );
   }
 };
