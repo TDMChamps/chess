@@ -22,6 +22,25 @@ let state = {
   turn: "",
 };
 
+let fromSquare;
+let toSquare;
+let piece;
+
+const clickToMove = () => {
+  const squareSelector = $(".square");
+  squareSelector.on("click", (e) => {
+    if (fromSquare) {
+      toSquare = $(e.delegateTarget).data("square");
+      onDrop(fromSquare, toSquare);
+      fromSquare = toSquare = null;
+    } else {
+      fromSquare = $(e.delegateTarget).data("square");
+      piece = $(e.delegateTarget).data("piece");
+      onDragStart(toSquare, piece, null, null);
+    }
+  });
+};
+
 const generateDeviceID = () => {
   let roomID = "";
   let chars = "abcdefgijklmnopqrestuvwxyz0123456789";
@@ -320,6 +339,8 @@ const initBoard = (gameDetails) => {
           acceptMatch(gameDetails);
         }
       });
+  } else {
+    clickToMove();
   }
 
   setPlayersNames(gameDetails);

@@ -848,7 +848,7 @@
           var square = alpha[j] + row;
 
           html +=
-            '<div class="{square} ' +
+            '<div class="square {square} ' +
             CSS[squareColor] +
             " " +
             "square-" +
