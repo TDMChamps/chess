@@ -34,6 +34,7 @@ const socketHelper = (io) => {
       fen: "start",
     };
     io.emit("welcome", { games });
+    io.emit("matchCreated", { game: games[gameID] });
   };
 
   const joinGame = (client, gameID) => {
@@ -47,13 +48,17 @@ const socketHelper = (io) => {
       if (!games[gameID].status) {
         games[gameID].status = 1;
         games[gameID].player2 = players[client.deviceID];
+
         side = games[gameID]["w"] ? "b" : "w";
         games[gameID][side] = client.deviceID;
-        io.to(games[gameID].player1.deviceID).emit("setSide", side);
-        io.to(games[gameID].player2.deviceID).emit(
+
+        io.to(games[gameID].player2.deviceID).emit("setSide", side);
+        io.to(games[gameID].player1.deviceID).emit(
           "setSide",
           side === "w" ? "b" : "w"
         );
+
+        io.to(gameID).emit("gameAccepted", games[gameID]);
       }
     }
   };

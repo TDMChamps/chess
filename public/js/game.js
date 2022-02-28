@@ -3,7 +3,7 @@ const chessBoard = window["ChessBoard"];
 const chess = window["Chess"];
 const IO = window["io"];
 const swal = window["sweetAlert"];
-const gameIDFromUrl = window["gameIDFromUrl"];
+let gameIDFromUrl = window["gameIDFromUrl"];
 
 let game = new chess();
 
@@ -91,21 +91,27 @@ const myGame = (gameDetails) => {
   }
 };
 
-socket.on("connect", function () {
-  myID = getDeviceID();
-
-  if (gameIDFromUrl) {
-    socket.emit("getGame", gameIDFromUrl);
+const checkGame = (gameID) => {
+  if (gameID) {
+    socket.emit("getGame", gameID);
     socket.on("gameDetails", ({ gameDetails }) => {
       if (gameDetails) {
+        gameIDFromUrl = gameID;
+        window.history.pushState(`/${gameID}`, "Online Chess", `/${gameID}`);
         initBoard(gameDetails);
         currentGame = gameDetails;
         $("#games").hide();
         $("#create").hide();
         myGame(gameDetails);
+        setPlayersNames(gameDetails);
       }
     });
   }
+};
+
+socket.on("connect", function () {
+  myID = getDeviceID();
+  checkGame(gameIDFromUrl);
 });
 
 const sounds = {
@@ -113,7 +119,7 @@ const sounds = {
   move: new Audio("./../sounds/move.ogg"),
   capture: new Audio("./../sounds/capture.ogg"),
   check: new Audio("./../sounds/+.wav"),
-  mate: new Audio("./../sounds/#.wav"),
+  mate: new Audio("./../sounds/mate.wav"),
 };
 
 let move;
@@ -200,6 +206,22 @@ const updateStatus = (dontEmit, source, target, captured) => {
   }
 
   if (game.in_checkmate()) {
+    const pos = getPiecePositions({
+      color: game.turn(),
+      type: "k",
+    });
+    $square(pos).addClass("check");
+    let winner = "Black";
+    if (moveColor === winner) {
+      winner = "White";
+    }
+    sounds.mate.play().catch((err) => console.log(err));
+    swal
+      .fire({
+        title: winner + " Won!",
+        confirmButtonText: "Got it",
+      })
+      .then(() => {});
     status = "Game over, " + moveColor + " is in checkmate.";
   } else if (game.in_draw()) {
     status = "Game over, drawn position";
@@ -302,15 +324,33 @@ const onSnapEnd = () => {
 };
 
 const setPlayersNames = (gameDetails) => {
-  board.orientation();
-  let color = ["White", "Black"];
-  board.orientation() === "black" && color.reverse();
-  $("#player1").text(`${color[0]}: ${gameDetails.player1.name} `);
-  if (gameDetails.player2) {
-    $("#player2").text(`${color[1]}: ${gameDetails.player2.name}`);
+  let names = ["???", "???"];
+
+  let whitePlayer = gameDetails.w;
+  let blackPlayer = gameDetails.b;
+
+  if (!whitePlayer) {
+    names[0] = `White: ??? `;
   } else {
-    $("#player2").text(`${color[1]}: ???`);
+    names[0] = `White: ${
+      gameDetails.player1.deviceID == whitePlayer
+        ? gameDetails.player1.name
+        : gameDetails.player2.name
+    }`;
   }
+  if (!blackPlayer) {
+    names[1] = `Black: ??? `;
+  } else {
+    names[1] = `Black: ${
+      gameDetails.player1.deviceID == blackPlayer
+        ? gameDetails.player1.name
+        : gameDetails.player2.name
+    }`;
+  }
+  board.orientation() === "black" && names.reverse();
+
+  $("#player1").text(names[0]);
+  $("#player2").text(names[1]);
 };
 
 const acceptMatch = (gameDetails) => {
@@ -373,6 +413,10 @@ socket.on("setSide", (data) => {
   setSide(data);
 });
 
+socket.on("gameAccepted", (gameDetails) => {
+  setPlayersNames(gameDetails);
+});
+
 socket.on("moveFromBackend", (move) => {
   updateMoves(move);
 });
@@ -398,6 +442,11 @@ $("#create").click(() => {
       } else if (result.isDenied) {
         socket.emit("createGame", "w");
       }
+      socket.on("matchCreated", ({ game }) => {
+        window["gameIDFromUrl"] = game.id;
+        checkGame(game.id);
+        copyAndShareGame(game.id);
+      });
     });
 });
 
@@ -405,7 +454,7 @@ const gameCard = (id, playerName, color) => `<div class="col">
   <div class="card">
     <div class="card-body">
       <h5 class="card-title">Challenger: ${playerName}</h5>
-      <p class="card-text">Match ID: #<a href="/${id}">${id}</a> </p>
+      <p class="card-text">Match ID: #<a onclick="return play('${id}')" href="/${id}">${id}</a> </p>
       <button onclick="play('${id}')" class="btn btn-outline">${color}</button>
     </div>
   </div>
@@ -424,6 +473,42 @@ const listGames = () => {
 };
 
 const play = (gameID) => {
-  console.log({ gameID });
+  // console.log({ gameID });
+  checkGame(gameID);
+  return false;
 };
-// $game;
+
+const copyMe = (TextToCopy) => {
+  let TempText = document.createElement("input");
+  TempText.value = TextToCopy;
+  document.body.appendChild(TempText);
+  TempText.select();
+
+  document.execCommand("copy");
+  document.body.removeChild(TempText);
+};
+
+const copyAndShareGame = (gameID) => {
+  swal
+    .fire({
+      title: "Share or invite someone",
+      confirmButtonText: "Click To Copy",
+      html: `<input type='text' class='swal2-input' value='${window.location.origin}/${gameID}' name='test'></input>`,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        copyMe(`${window.location.origin}/${gameID}`);
+        const Toast = swal.mixin({
+          toast: true,
+          position: "top-right",
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true,
+        });
+        Toast.fire({
+          icon: "success",
+          title: "Copied",
+        });
+      }
+    });
+};
