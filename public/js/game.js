@@ -61,7 +61,7 @@ const addLiveUser = (newUser) => {
 
 const onlineBadge = (userID) => {
   return `<i class="bi bi-check-circle-fill" style="color:${
-    userID ? "#b58862" : "#f7ead1"
+    userID ? "#38ab42" : "#bbbbbb"
   }" data-user-id=${userID}></i>`;
 };
 
@@ -78,7 +78,7 @@ socket.on("disconnected", (user) => {
 const updateOnlineBadge = (userID, status) => {
   $("i[data-user-id=" + userID + "]").each(function () {
     var element = $(this);
-    element.css("color", status ? "#b58862" : "#f7ead1");
+    element.css("color", status ? "#38ab42" : "#bbbbbb");
   });
 };
 
