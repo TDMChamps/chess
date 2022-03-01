@@ -47,6 +47,41 @@ const clickToMove = () => {
   });
 };
 
+let liveUsers = [];
+
+const addLiveUser = (newUser) => {
+  liveUsers.reverse();
+  liveUsers.push(newUser);
+  liveUsers.reverse();
+  liveUsers = liveUsers.slice(0, 20);
+  liveUsers.forEach((user) => {
+    $("#liveUsers").html($("#liveUsers").html() + user + "<br>");
+  });
+};
+
+const onlineBadge = (userID) => {
+  return `<i class="bi bi-check-circle-fill" style="color:${
+    userID ? "#b58862" : "#f7ead1"
+  }" data-user-id=${userID}></i>`;
+};
+
+socket.on("connected", (user) => {
+  updateOnlineBadge(user.deviceID, true);
+  addLiveUser(`${user.name} joined`);
+});
+
+socket.on("disconnected", (user) => {
+  updateOnlineBadge(user.deviceID, false);
+  addLiveUser(`${user.name} left`);
+});
+
+const updateOnlineBadge = (userID, status) => {
+  $("i[data-user-id=" + userID + "]").each(function () {
+    var element = $(this);
+    element.css("color", status ? "#b58862" : "#f7ead1");
+  });
+};
+
 const generateDeviceID = () => {
   let roomID = "";
   let chars = "abcdefgijklmnopqrestuvwxyz0123456789";
@@ -112,6 +147,9 @@ const checkGame = (gameID) => {
 socket.on("connect", function () {
   myID = getDeviceID();
   checkGame(gameIDFromUrl);
+  socket.on("myUsername", (userName) => {
+    $("#myUsername").text(userName);
+  });
 });
 
 const sounds = {
@@ -334,8 +372,12 @@ const setPlayersNames = (gameDetails) => {
   } else {
     names[0] = `White: ${
       gameDetails.player1.deviceID == whitePlayer
-        ? gameDetails.player1.name
-        : gameDetails.player2.name
+        ? onlineBadge(gameDetails.player1.deviceID) +
+          " " +
+          gameDetails.player1.name
+        : onlineBadge(gameDetails.player2.deviceID) +
+          " " +
+          gameDetails.player2.name
     }`;
   }
   if (!blackPlayer) {
@@ -343,14 +385,18 @@ const setPlayersNames = (gameDetails) => {
   } else {
     names[1] = `Black: ${
       gameDetails.player1.deviceID == blackPlayer
-        ? gameDetails.player1.name
-        : gameDetails.player2.name
+        ? onlineBadge(gameDetails.player1.deviceID) +
+          " " +
+          gameDetails.player1.name
+        : onlineBadge(gameDetails.player2.deviceID) +
+          " " +
+          gameDetails.player2.name
     }`;
   }
   board.orientation() === "black" && names.reverse();
 
-  $("#player1").text(names[0]);
-  $("#player2").text(names[1]);
+  $("#player1").html(names[0]);
+  $("#player2").html(names[1]);
 };
 
 const acceptMatch = (gameDetails) => {
@@ -380,10 +426,15 @@ const initBoard = (gameDetails) => {
 
     swal
       .fire({
-        title: `${gameDetails.player1.name} inving you`,
+        title: `${
+          onlineBadge(gameDetails.player1.deviceID) +
+          " " +
+          gameDetails.player1.name
+        } inving you`,
         showCancelButton: true,
         confirmButtonText: "Accpet",
-        cancelButtonText: "Just Wacth the match",
+        confirmButtonColor: "#b58862",
+        cancelButtonText: "Just Watch the match",
       })
       .then((result) => {
         if (result.isConfirmed) {
@@ -450,10 +501,12 @@ $("#create").click(() => {
     });
 });
 
-const gameCard = (id, playerName, color) => `<div class="col">
+const gameCard = (id, player1, player2, color) => `<div class="col">
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title">Challenger: ${playerName}</h5>
+      <h5 class="card-title">${onlineBadge(player1.deviceID)} ${
+  player1.name
+} vs ${onlineBadge(player2.deviceID)} ${player2.name}</h5>
       <p class="card-text">Match ID: #<a onclick="return play('${id}')" href="/${id}">${id}</a> </p>
       <button onclick="play('${id}')" class="btn btn-outline">${color}</button>
     </div>
@@ -466,7 +519,8 @@ const listGames = () => {
   for (const key in games) {
     gameDiv.innerHTML += gameCard(
       games[key].id,
-      games[key].player1.name,
+      games[key].player1,
+      games[key].player2 ? games[key].player2 : { name: "???", deviceID: 0 },
       games[key].b ? pieceSquare("wK") : pieceSquare("bK")
     );
   }
@@ -493,6 +547,7 @@ const copyAndShareGame = (gameID) => {
     .fire({
       title: "Share or invite someone",
       confirmButtonText: "Click To Copy",
+      confirmButtonColor: "#b58862",
       html: `<input type='text' class='swal2-input' value='${window.location.origin}/${gameID}' name='test'></input>`,
     })
     .then((result) => {
@@ -512,3 +567,7 @@ const copyAndShareGame = (gameID) => {
       }
     });
 };
+
+$(window).resize((a, b) => {
+  board && board.resize(a, b);
+});

@@ -1,11 +1,17 @@
 const cookie = require("cookie");
-const randonName = require("random-name");
+const DeviceDetector = require("device-detector-js");
 
 const middleware = (connection, next) => {
   const cookief = connection.handshake.headers.cookie;
+  const deviceDetector = new DeviceDetector();
+  const userAgent = connection.handshake.headers["user-agent"];
+  const device = deviceDetector.parse(userAgent).device;
   if (cookief) {
     const cookies = cookie.parse(cookief);
     connection.deviceID = cookies["deviceID"];
+    connection.deviceName = `${device.brand} ${
+      device.model ? device.model : device.type
+    }`;
   }
   next();
 };
@@ -72,19 +78,25 @@ const socketHelper = (io) => {
   };
 
   const addUserIdentity = (client) => {
-    const deviceID = client.deviceID;
-
+    const { deviceID, deviceName } = client;
+    let notify = true;
     if (players[deviceID]) {
       players[deviceID].id = client.id;
       players[deviceID].deviceID = deviceID;
+      if (players[deviceID].online) {
+        notify = false;
+      }
+      players[deviceID].online = true;
     } else {
       players[deviceID] = {
         id: client.id,
         deviceID: deviceID,
-        name: randonName.place(),
+        name: deviceName,
+        online: true,
       };
     }
     client.join(deviceID);
+    notify && io.emit("connected", players[deviceID]);
     return players[deviceID];
   };
   io.use(middleware);
@@ -93,6 +105,8 @@ const socketHelper = (io) => {
     const user = addUserIdentity(client);
     console.log("new connection added " + user.name);
     console.log("deviceID " + client.deviceID);
+
+    client.emit("myUsername", user.name);
 
     client.on("join", () => {
       client.join("room1");
@@ -133,8 +147,8 @@ const socketHelper = (io) => {
 
     client.on("disconnect", () => {
       console.log("client disconected " + client.id);
-      //   client.to("room1").emit("test", { message: "Bye from the server" });
-      //   players.delete(client.id);
+      players[client.deviceID].online = false;
+      io.emit("disconnected", players[client.deviceID]);
     });
 
     client.on("move", (move) => {

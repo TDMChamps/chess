@@ -29,3 +29,31 @@
 .lastMove {
   box-shadow: inset 0px 0px 3px 2px #283da7;
 }
+
+.btn.btn-primary,
+.btn.btn-primary:hover,
+.btn.btn-primary:active {
+  background: #b58862;
+  border: none;
+  outline: none;
+}
+
+a {
+  text-decoration: none !important;
+}
+a > h2 {
+  color: #b58863;
+}
+
+.live-users {
+  position: relative !important;
+  float: right !important;
+  bottom: 0px;
+  right: 0px;
+  background-color: #fff;
+  width: 350px;
+  height: 100px;
+  box-shadow: inset 0px 0px 3px 3px #f0d9b5;
+  padding: 10px;
+  overflow-y: scroll;
+}
