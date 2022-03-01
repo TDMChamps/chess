@@ -62,7 +62,7 @@ const addLiveUser = (newUser) => {
 const onlineBadge = (userID) => {
   return `<i class="bi bi-check-circle-fill" style="color:${
     userID ? "#38ab42" : "#bbbbbb"
-  }" data-user-id=${userID}></i>`;
+  };font-size: 15px;" data-user-id=${userID}></i>`;
 };
 
 socket.on("connected", (user) => {
@@ -372,12 +372,12 @@ const setPlayersNames = (gameDetails) => {
   } else {
     names[0] = `White: ${
       gameDetails.player1.deviceID == whitePlayer
-        ? onlineBadge(gameDetails.player1.deviceID) +
+        ? gameDetails.player1.name +
           " " +
-          gameDetails.player1.name
-        : onlineBadge(gameDetails.player2.deviceID) +
+          onlineBadge(gameDetails.player1.deviceID)
+        : gameDetails.player2.name +
           " " +
-          gameDetails.player2.name
+          onlineBadge(gameDetails.player2.deviceID)
     }`;
   }
   if (!blackPlayer) {
@@ -385,12 +385,12 @@ const setPlayersNames = (gameDetails) => {
   } else {
     names[1] = `Black: ${
       gameDetails.player1.deviceID == blackPlayer
-        ? onlineBadge(gameDetails.player1.deviceID) +
+        ? gameDetails.player1.name +
           " " +
-          gameDetails.player1.name
-        : onlineBadge(gameDetails.player2.deviceID) +
+          onlineBadge(gameDetails.player1.deviceID)
+        : gameDetails.player2.name +
           " " +
-          gameDetails.player2.name
+          onlineBadge(gameDetails.player2.deviceID)
     }`;
   }
   board.orientation() === "black" && names.reverse();
@@ -427,9 +427,9 @@ const initBoard = (gameDetails) => {
     swal
       .fire({
         title: `${
-          onlineBadge(gameDetails.player1.deviceID) +
+          gameDetails.player1.name +
           " " +
-          gameDetails.player1.name
+          onlineBadge(gameDetails.player1.deviceID)
         } inving you`,
         showCancelButton: true,
         confirmButtonText: "Accpet",
@@ -504,9 +504,9 @@ $("#create").click(() => {
 const gameCard = (id, player1, player2, color) => `<div class="col">
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title">${onlineBadge(player1.deviceID)} ${
-  player1.name
-} vs ${onlineBadge(player2.deviceID)} ${player2.name}</h5>
+      <h5 class="card-title">${player1.name} ${onlineBadge(
+  player1.deviceID
+)} vs ${player2.name}  ${onlineBadge(player2.deviceID)}</h5>
       <p class="card-text">Match ID: #<a onclick="return play('${id}')" href="/${id}">${id}</a> </p>
       <button onclick="play('${id}')" class="btn btn-outline">${color}</button>
     </div>
