@@ -65,6 +65,7 @@ const socketHelper = (io) => {
         );
 
         io.to(gameID).emit("gameAccepted", games[gameID]);
+        io.emit("welcome", { games });
       }
     }
   };
@@ -97,6 +98,7 @@ const socketHelper = (io) => {
     }
     client.join(deviceID);
     notify && io.emit("connected", players[deviceID]);
+    notify && io.emit("players", players);
     return players[deviceID];
   };
   io.use(middleware);
@@ -149,11 +151,20 @@ const socketHelper = (io) => {
       console.log("client disconected " + client.id);
       players[client.deviceID].online = false;
       io.emit("disconnected", players[client.deviceID]);
+      io.emit("players", players);
     });
 
     client.on("move", (move) => {
       const gameID = move.gameIDFromUrl;
       if (isPlaying(client, gameID)) {
+        games[gameID].fen = move.fen;
+        client.to(gameID).emit("moveFromBackend", move);
+      }
+    });
+
+    client.on("result", (move) => {
+      const gameID = move.gameIDFromUrl;
+      if (isPlaying(client, gameID) && isPlaying(client, move.winner)) {
         games[gameID].fen = move.fen;
         client.to(gameID).emit("moveFromBackend", move);
       }

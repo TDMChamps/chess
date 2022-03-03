@@ -47,17 +47,22 @@ const clickToMove = () => {
   });
 };
 
-let liveUsers = [];
-
 const addLiveUser = (newUser) => {
-  liveUsers.reverse();
-  liveUsers.push(newUser);
-  liveUsers.reverse();
-  liveUsers = liveUsers.slice(0, 20);
-  liveUsers.forEach((user) => {
-    $("#liveUsers").html($("#liveUsers").html() + user + "<br>");
-  });
+  Toastify({
+    text: newUser,
+    duration: 2000,
+    gravity: "bottom",
+    position: "right",
+    style: {
+      background: "#b58862",
+      borderRadius: "5px",
+      opacity: 0.9,
+      fontSize: "10px",
+    },
+  }).showToast();
 };
+const chessMen = (p, h) =>
+  `<img src="img/chesspieces/wikipedia/${p}.png" alt="${p}" style="vertical-align: bottom;width:${h}px;height:${h}px;">`;
 
 const onlineBadge = (userID) => {
   return `<i class="bi bi-check-circle-fill" style="color:${
@@ -501,27 +506,47 @@ $("#create").click(() => {
     });
 });
 
-const gameCard = (id, player1, player2, color) => `<div class="col">
+const gameCard = (
+  id,
+  player1,
+  player2,
+  btn,
+  color1,
+  color2
+) => `<div class="col">
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title">${player1.name} ${onlineBadge(
-  player1.deviceID
-)} vs ${player2.name}  ${onlineBadge(player2.deviceID)}</h5>
+      <h5 class="card-title">${chessMen(color1 + "K", 25)} ${
+  player1.name
+} ${onlineBadge(player1.deviceID)} vs ${chessMen(color2 + "K", 25)} ${
+  player2.name
+}  ${onlineBadge(player2.deviceID)}</h5>
       <p class="card-text">Match ID: #<a onclick="return play('${id}')" href="/${id}">${id}</a> </p>
-      <button onclick="play('${id}')" class="btn btn-outline">${color}</button>
+      ${btn}
     </div>
   </div>
 </div>`;
 
 const listGames = () => {
   const gameDiv = document.getElementById("games");
+
+  const acceptButtom = (color, id) =>
+    `<button class='btn btn-primary' onclick="play('${id}')">Play as ${color}</button>`;
   gameDiv.innerHTML = "";
   for (const key in games) {
-    gameDiv.innerHTML += gameCard(
-      games[key].id,
-      games[key].player1,
-      games[key].player2 ? games[key].player2 : { name: "???", deviceID: 0 },
-      games[key].b ? pieceSquare("wK") : pieceSquare("bK")
+    gameDiv.insertAdjacentHTML(
+      "afterbegin",
+      // gameDiv.innerHTML += gameCard(
+      gameCard(
+        games[key].id,
+        games[key].player1,
+        games[key].player2 ? games[key].player2 : { name: "???", deviceID: 0 },
+        games[key].b
+          ? acceptButtom("White", games[key].id)
+          : acceptButtom("Black", games[key].id),
+        games[key].b ? "B" : "W",
+        games[key].b ? "W" : "B"
+      )
     );
   }
 };
