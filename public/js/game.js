@@ -47,19 +47,23 @@ const clickToMove = () => {
   });
 };
 
-const addLiveUser = (newUser) => {
+const showToast = (message, bgColor) => {
   Toastify({
-    text: newUser,
+    text: message,
     duration: 2000,
     gravity: "bottom",
     position: "right",
     style: {
-      background: "#b58862",
+      background: bgColor,
       borderRadius: "5px",
       opacity: 0.9,
       fontSize: "10px",
     },
   }).showToast();
+};
+
+const addLiveUser = (newUser) => {
+  showToast(newUser, "#b58862");
 };
 const chessMen = (p, h) =>
   `<img src="img/chesspieces/wikipedia/${p}.png" alt="${p}" style="vertical-align: bottom;width:${h}px;height:${h}px;">`;
@@ -544,8 +548,8 @@ const listGames = () => {
         games[key].b
           ? acceptButtom("White", games[key].id)
           : acceptButtom("Black", games[key].id),
-        games[key].b ? "B" : "W",
-        games[key].b ? "W" : "B"
+        games[key].b ? "b" : "w",
+        games[key].b ? "w" : "b"
       )
     );
   }
